@@ -33,7 +33,7 @@ app.post("/urls", (req, res) => {
   const { longURL } = req.body;
   urlDatabase[id] = longURL;
   //console.log(req.body); // Log the POST request body to the console
-  console.log(longURL);
+  //console.log(longURL);
   res.redirect(`/urls/${id}`); // Respond with 'Ok' (we will replace this)
 });
 
@@ -61,14 +61,18 @@ app.get("/hello", (req, res) => {
   res.render("hello_world", templateVars);
 });
 
-// app.get("/set", (req, res) => {
-//   const a = 1;
-//   res.send(`a = ${a}`);
-// });
+app.post("/urls/:id", (req, res) => {
+  const { id } = req.params;
+  const longURL = req.body.longURL;
+  urlDatabase[id] = longURL;
+  res.redirect(`/urls/${id}`);
+});
 
-// app.get("/fetch", (req, res) => {
-//   res.send(`a = ${a}`);
-// });
+app.post("/urls/:id/delete", (req, res) => {
+  const { id } = req.params;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
