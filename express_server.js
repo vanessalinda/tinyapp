@@ -12,9 +12,31 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
 const generateRandomString = () => {
   let randomString = Math.random().toString(36).slice(2, 8);
   return randomString;
+};
+
+const getUserByEmail = (email) => {
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
 };
 
 app.get("/", (req, res) => {
@@ -26,7 +48,9 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  const user_id = req.cookies.user_id;
+  const user = users[user_id];
+  const templateVars = { urls: urlDatabase, user };
   res.render("urls_index", templateVars);
 });
 
@@ -40,16 +64,20 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username: req.cookies["username"] };
+  const user_id = req.cookies["user_id"];
+  const user = users[user_id];
+  const templateVars = { user };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   const { id } = req.params;
+  const user_id = req.cookies["user_id"];
+  const user = users[user_id];
   const templateVars = {
     id,
     longURL: urlDatabase[id],
-    username: req.cookies["username"],
+    user,
   };
   res.render("urls_show", templateVars);
 });
@@ -80,21 +108,39 @@ app.post("/urls/:id/delete", (req, res) => {
 
 app.post("/login", (req, res) => {
   //console.log(req.cookies);
-  const username = req.body.username;
+  const { username } = req.body;
   res.cookie("username", username);
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  const { username } = req.cookies;
+  const { user_id } = req.cookies;
   //console.log(req.cookies);
-  res.clearCookie("username", username);
+  res.clearCookie("user_id", user_id);
   res.redirect("/urls");
 });
 
 app.get("/register", (req, res) => {
   //const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("register");
+});
+
+app.post("/register", (req, res) => {
+  const user_id = generateRandomString();
+  const { email, password } = req.body;
+  if (!email || !password) res.status(400).send("Invalid username or password");
+  const foundUser = getUserByEmail(email);
+  if (foundUser) res.status(400).send("A user with that email already exists");
+  users[user_id] = {
+    id: user_id,
+    email,
+    password,
+  };
+
+  //console.log(req.body); // Log the POST request body to the console
+  //console.log(users);
+  res.cookie("user_id", user_id);
+  res.redirect("/urls"); // Respond with 'Ok' (we will replace this)
 });
 
 app.listen(PORT, () => {

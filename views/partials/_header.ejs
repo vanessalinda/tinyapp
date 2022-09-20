@@ -24,8 +24,8 @@
         </a>
       </div>
     </div>
-    <% if(username){ %>
-      <h4 class="navbar-brand">Logged in as: <%= username %>!</h4>&nbsp;
+    <% if(user){ %>
+      <h4 class="navbar-brand">Logged in as: <%= user["email"] %>!</h4>&nbsp;
       <form action="/logout" method="POST">
         <button type="submit" class="btn btn-outline-dark">Log out</button>
       </form>
