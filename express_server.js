@@ -31,12 +31,15 @@ const generateRandomString = () => {
 };
 
 const getUserByEmail = (email) => {
+  // for (const userId in users) {
+  //   if (users[userId].email === email) {
+  //     return users[userId];
+  //   }
+  // }
+  // return null;
   for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
-    }
+    return users[userId].email === email ? users[userId] : null;
   }
-  return null;
 };
 
 app.get("/", (req, res) => {
@@ -106,12 +109,12 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/login", (req, res) => {
-  //console.log(req.cookies);
-  const { username } = req.body;
-  res.cookie("username", username);
-  res.redirect("/urls");
-});
+// app.post("/login", (req, res) => {
+//   //console.log(req.cookies);
+//   const { username } = req.body;
+//   res.cookie("username", username);
+//   res.redirect("/urls");
+// });
 
 app.post("/logout", (req, res) => {
   const { user_id } = req.cookies;
@@ -136,6 +139,11 @@ app.post("/register", (req, res) => {
     email,
     password,
   };
+
+  app.get("/login", (req, res) => {
+    //const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+    res.render("login");
+  });
 
   //console.log(req.body); // Log the POST request body to the console
   //console.log(users);

@@ -30,7 +30,14 @@
         <button type="submit" class="btn btn-outline-dark">Log out</button>
       </form>
     <% } else{ %>  
-      <form class="form-inline" action="/login" method="POST">
+      <form action="/register" method="GET">
+        <button type="submit" class="btn btn-outline-dark">Register</button>
+      </form>
+      &nbsp;
+      <form action="/login" method="GET">
+        <button type="submit" class="btn btn-outline-dark">Login</button>
+      </form>
+      <!-- <form class="form-inline" action="/login" method="POST">
         <div class="form-group mb-2">
           <input
             class="form-control"
@@ -41,7 +48,7 @@
           />
           <button type="submit" class="btn btn-outline-dark">Login</button>
         </div>
-      </form>
+      </form> -->
    <% } %>
   </nav>
 </header>
