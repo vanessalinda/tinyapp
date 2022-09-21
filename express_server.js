@@ -110,7 +110,11 @@ app.get("/register", (req, res) => {
   const user_id = req.cookies.user_id;
   const user = users[user_id];
   const templateVars = { urls: urlDatabase, user };
-  res.render("register", templateVars);
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    res.render("register", templateVars);
+  }
 });
 
 app.post("/register", (req, res) => {
@@ -133,7 +137,11 @@ app.get("/login", (req, res) => {
   const user_id = req.cookies.user_id;
   const user = users[user_id];
   const templateVars = { urls: urlDatabase, user };
-  res.render("login", templateVars);
+  if (!user) {
+    res.render("login", templateVars);
+  } else {
+    res.redirect("/urls");
+  }
 });
 
 app.post("/login", (req, res) => {
