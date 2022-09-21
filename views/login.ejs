@@ -13,13 +13,20 @@
     <title>Login</title>
 </head>
 <body>
+  <%- include('partials/_header') %>
     <!-- <h2>Already registered? <a href="/login">Login!</a></h2> -->
     <main style="margin: 1em;">
     <h2>Login to TinyApp</h2>
     <form method="POST" action="/login">
-        <input type="email" name="email" placeholder="Email">
-        <input type="password" name="password" placeholder="Password">
-        <button type="submit" class="btn btn-outline-primary">Login</button>
+      <label for="email">Email</label>
+      <div class="mb-2">
+          <input type="email" name="email" placeholder="Email">
+        </div>
+        <label for="password">Password</label>
+        <div class="mb-2">
+          <input type="password" name="password" placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
     </form>
   </main>
 </body>
