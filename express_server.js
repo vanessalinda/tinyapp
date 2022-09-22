@@ -7,9 +7,20 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// const urlDatabase = {
+//   b2xVn2: "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com",
+// };
+
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "userRandomID",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "user2RandomID",
+  },
 };
 
 const users = {
@@ -39,6 +50,15 @@ const getUserByEmail = (email) => {
   return null;
 };
 
+const urlsForUser = (id) => {
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
+};
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -56,9 +76,18 @@ app.get("/urls", (req, res) => {
 
 //Handling creation of new short urls
 app.post("/urls", (req, res) => {
+  const { user_id } = req.cookies;
+  const user = users[user_id];
+  if (!user) {
+    res.status(403).send("<h2>Users must log in to create new URLs.</h2>");
+  }
   const id = generateRandomString();
   const { longURL } = req.body;
-  urlDatabase[id] = longURL;
+  //urlDatabase[id].longURL = longURL;
+  urlDatabase[id] = {
+    longURL,
+    userID: user_id,
+  };
   res.redirect(`/urls/${id}`);
 });
 
@@ -67,7 +96,11 @@ app.get("/urls/new", (req, res) => {
   const user_id = req.cookies["user_id"];
   const user = users[user_id];
   const templateVars = { user };
-  res.render("urls_new", templateVars);
+  if (user) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //Displaying the unique urls
@@ -77,7 +110,7 @@ app.get("/urls/:id", (req, res) => {
   const user = users[user_id];
   const templateVars = {
     id,
-    longURL: urlDatabase[id],
+    longURL: urlDatabase[id].longURL,
     user,
   };
   res.render("urls_show", templateVars);
@@ -86,15 +119,19 @@ app.get("/urls/:id", (req, res) => {
 //Redirecting from short url to full url
 app.get("/u/:id", (req, res) => {
   const { id } = req.params;
-  const longURL = urlDatabase[id];
-  res.redirect(longURL);
+  const longURL = urlDatabase[id].longURL;
+  if (longURL) {
+    res.redirect(longURL);
+  } else {
+    res.send("<h2>This short URL does not exist</h2>");
+  }
 });
 
 //Updating short urls
 app.post("/urls/:id", (req, res) => {
   const { id } = req.params;
   const longURL = req.body.longURL;
-  urlDatabase[id] = longURL;
+  urlDatabase[id].longURL = longURL;
   res.redirect(`/urls/${id}`);
 });
 
@@ -150,6 +187,9 @@ app.post("/login", (req, res) => {
     res.status(403).send("Username or password cannot be blank");
   }
   const foundUser = getUserByEmail(email);
+  if (!foundUser) {
+    res.status(403).send("No user with that email exists");
+  }
   if (password !== foundUser.password) {
     res.status(403).send("Invalid password");
   }
