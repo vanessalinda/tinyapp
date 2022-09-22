@@ -16,10 +16,12 @@ const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
     userID: "userRandomID",
+    shortURL: "b6UTxQ",
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "user2RandomID",
+    shortURL: "i3BoGr",
   },
 };
 
@@ -51,12 +53,15 @@ const getUserByEmail = (email) => {
 };
 
 const urlsForUser = (id) => {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
+  const urlsForUserList = [];
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urlsForUserList.push(urlDatabase[url]);
     }
   }
-  return null;
+  return urlsForUserList ? urlsForUserList : null;
+  //return urlsForUserList;
+  //return null;
 };
 
 app.get("/", (req, res) => {
@@ -67,10 +72,13 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+//Displaying all urls for user
 app.get("/urls", (req, res) => {
   const user_id = req.cookies.user_id;
   const user = users[user_id];
-  const templateVars = { urls: urlDatabase, user };
+  const urlList = urlsForUser(user_id);
+  console.log(urlList);
+  const templateVars = { urls: urlList, user };
   res.render("urls_index", templateVars);
 });
 
@@ -83,11 +91,14 @@ app.post("/urls", (req, res) => {
   }
   const id = generateRandomString();
   const { longURL } = req.body;
+  if (!longURL) res.redirect("/urls/new");
   //urlDatabase[id].longURL = longURL;
   urlDatabase[id] = {
     longURL,
     userID: user_id,
+    shortURL: id,
   };
+  console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
 
