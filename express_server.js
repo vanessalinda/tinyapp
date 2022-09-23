@@ -64,6 +64,15 @@ const urlsForUser = (id) => {
   //return null;
 };
 
+const urlBelongsToUser = (urlList, id) => {
+  for (let url of urlList) {
+    if (url.shortURL === id) {
+      return true;
+    }
+  }
+  return false;
+};
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -77,7 +86,7 @@ app.get("/urls", (req, res) => {
   const user_id = req.cookies.user_id;
   const user = users[user_id];
   const urlList = urlsForUser(user_id);
-  console.log(urlList);
+  //console.log(urlList);
   const templateVars = { urls: urlList, user };
   res.render("urls_index", templateVars);
 });
@@ -98,7 +107,7 @@ app.post("/urls", (req, res) => {
     userID: user_id,
     shortURL: id,
   };
-  console.log(urlDatabase);
+  //console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
 
@@ -119,6 +128,18 @@ app.get("/urls/:id", (req, res) => {
   const { id } = req.params;
   const user_id = req.cookies["user_id"];
   const user = users[user_id];
+  const urlList = urlsForUser(user_id);
+
+  if (!user) {
+    res.status(403).send("<h2>Users must log in to view their URLs.</h2>");
+  }
+
+  if (!urlBelongsToUser(urlList, id)) {
+    res
+      .status(403)
+      .send("<h2>You do not have permission to access this url.</h2>");
+  }
+
   const templateVars = {
     id,
     longURL: urlDatabase[id].longURL,
@@ -141,6 +162,27 @@ app.get("/u/:id", (req, res) => {
 //Updating short urls
 app.post("/urls/:id", (req, res) => {
   const { id } = req.params;
+  const existingURL = urlDatabase[id];
+  const user_id = req.cookies["user_id"];
+  const user = users[user_id];
+  const urlList = urlsForUser(user_id);
+
+  if (!existingURL) {
+    res.send("<h2>This short URL does not exist</h2>");
+  }
+
+  if (!user) {
+    res
+      .status(403)
+      .send("<h2>Users must be logged into update their urls.</h2>");
+  }
+
+  if (!urlBelongsToUser(urlList, id)) {
+    res
+      .status(403)
+      .send("<h2>You do not have permission to update this url.</h2>");
+  }
+
   const longURL = req.body.longURL;
   urlDatabase[id].longURL = longURL;
   res.redirect(`/urls/${id}`);
@@ -149,11 +191,32 @@ app.post("/urls/:id", (req, res) => {
 //Deleting shorts urls
 app.post("/urls/:id/delete", (req, res) => {
   const { id } = req.params;
+  const existingURL = urlDatabase[id];
+  const user_id = req.cookies["user_id"];
+  const user = users[user_id];
+  const urlList = urlsForUser(user_id);
+
+  if (!existingURL) {
+    res.send("<h2>This short URL does not exist</h2>");
+  }
+
+  if (!user) {
+    res
+      .status(403)
+      .send("<h2>Users must be logged into delete their urls.</h2>");
+  }
+
+  if (!urlBelongsToUser(urlList, id)) {
+    res
+      .status(403)
+      .send("<h2>You do not have permission to delete this url.</h2>");
+  }
+
   delete urlDatabase[id];
   res.redirect("/urls");
 });
 
-//Handling registration
+//Handling registration page
 app.get("/register", (req, res) => {
   const user_id = req.cookies.user_id;
   const user = users[user_id];
@@ -165,6 +228,7 @@ app.get("/register", (req, res) => {
   }
 });
 
+//Handling creation of new user
 app.post("/register", (req, res) => {
   const user_id = generateRandomString();
   const { email, password } = req.body;
