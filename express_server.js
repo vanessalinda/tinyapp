@@ -1,12 +1,24 @@
 const express = require("express");
 const app = express();
 const cookieParser = require("cookie-parser");
+//const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
 const PORT = 8080;
+
+const { getUserByEmail } = require("./helpers");
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+// app.use(
+//   cookieSession({
+//     name: "session",
+//     //keys: [/* secret keys */],
+
+//     // Cookie Options
+//     //maxAge: 24 * 60 * 60 * 1000 // 24 hours
+//   })
+// );
 
 // const urlDatabase = {
 //   b2xVn2: "http://www.lighthouselabs.ca",
@@ -44,14 +56,14 @@ const generateRandomString = () => {
   return randomString;
 };
 
-const getUserByEmail = (email) => {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
-    }
-  }
-  return null;
-};
+// const getUserByEmail = (email, database) => {
+//   for (const userId in database) {
+//     if (database[userId].email === email) {
+//       return database[userId];
+//     }
+//   }
+//   return null;
+// };
 
 const urlsForUser = (id) => {
   const urlsForUserList = [];
@@ -61,8 +73,6 @@ const urlsForUser = (id) => {
     }
   }
   return urlsForUserList ? urlsForUserList : null;
-  //return urlsForUserList;
-  //return null;
 };
 
 const urlBelongsToUser = (urlList, id) => {
@@ -235,7 +245,7 @@ app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email || !password) res.status(400).send("Invalid username or password");
-  const foundUser = getUserByEmail(email);
+  const foundUser = getUserByEmail(email, users);
   if (foundUser) res.status(400).send("A user with that email already exists");
   users[user_id] = {
     id: user_id,
@@ -263,7 +273,7 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     res.status(403).send("Username or password cannot be blank");
   }
-  const foundUser = getUserByEmail(email);
+  const foundUser = getUserByEmail(email, users);
   if (!foundUser) {
     res.status(403).send("No user with that email exists");
   }
