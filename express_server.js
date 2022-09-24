@@ -23,6 +23,7 @@ app.use(
   })
 );
 
+//URL Database
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
@@ -36,6 +37,7 @@ const urlDatabase = {
   },
 };
 
+//User Database
 const users = {
   // userRandomID: {
   //   id: "userRandomID",
