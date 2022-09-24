@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
 const PORT = 8080;
 
 app.set("view engine", "ejs");
@@ -232,13 +233,14 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const user_id = generateRandomString();
   const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email || !password) res.status(400).send("Invalid username or password");
   const foundUser = getUserByEmail(email);
   if (foundUser) res.status(400).send("A user with that email already exists");
   users[user_id] = {
     id: user_id,
     email,
-    password,
+    hashedPassword,
   };
   res.cookie("user_id", user_id);
   res.redirect("/urls");
@@ -265,7 +267,7 @@ app.post("/login", (req, res) => {
   if (!foundUser) {
     res.status(403).send("No user with that email exists");
   }
-  if (password !== foundUser.password) {
+  if (!bcrypt.compareSync(password, foundUser.hashedPassword)) {
     res.status(403).send("Invalid password");
   }
   res.cookie("user_id", foundUser.id);
