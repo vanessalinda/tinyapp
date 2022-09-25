@@ -11,6 +11,8 @@ const {
   urlBelongsToUser,
 } = require("./helpers");
 
+const { urlDatabase, users } = require("./data");
+
 app.set("view engine", "ejs");
 
 //middleware
@@ -22,34 +24,6 @@ app.use(
     maxAge: 10 * 60 * 1000, // 10 min
   })
 );
-
-//URL Database
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "userRandomID",
-    shortURL: "b6UTxQ",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "user2RandomID",
-    shortURL: "i3BoGr",
-  },
-};
-
-//User Database
-const users = {
-  // userRandomID: {
-  //   id: "userRandomID",
-  //   email: "user@example.com",
-  //   password: "purple-monkey-dinosaur",
-  // },
-  // user2RandomID: {
-  //   id: "user2RandomID",
-  //   email: "user2@example.com",
-  //   password: "dishwasher-funk",
-  // },
-};
 
 app.get("/", (req, res) => {
   res.redirect("/urls");
@@ -73,15 +47,12 @@ app.get("/urls", (req, res) => {
 app.post("/urls", (req, res) => {
   const { user_id } = req.session;
   const user = users[user_id];
-
-  if (!user) {
-    res.status(403).send("<h2>Users must log in to create new URLs.</h2>");
-  }
-
   const id = generateRandomString();
   const { longURL } = req.body;
 
-  if (!longURL) {
+  if (!user) {
+    res.status(403).send("<h2>Users must log in to create new URLs.</h2>");
+  } else if (!longURL) {
     res.redirect("/urls/new");
   } else {
     urlDatabase[id] = {
@@ -114,20 +85,18 @@ app.get("/urls/:id", (req, res) => {
 
   if (!user) {
     res.status(403).send("<h2>Users must log in to view their URLs.</h2>");
-  }
-
-  if (!urlBelongsToUser(urlList, id)) {
+  } else if (!urlBelongsToUser(urlList, id)) {
     res
       .status(403)
       .send("<h2>You do not have permission to access this url.</h2>");
+  } else {
+    const templateVars = {
+      id,
+      longURL: urlDatabase[id].longURL,
+      user,
+    };
+    res.render("urls_show", templateVars);
   }
-
-  const templateVars = {
-    id,
-    longURL: urlDatabase[id].longURL,
-    user,
-  };
-  res.render("urls_show", templateVars);
 });
 
 //Redirecting from short url to full url
@@ -148,25 +117,19 @@ app.post("/urls/:id", (req, res) => {
   const { user_id } = req.session;
   const user = users[user_id];
   const urlList = urlsForUser(user_id, urlDatabase);
+  const longURL = req.body.longURL;
 
   if (!existingURL) {
     res.send("<h2>This short URL does not exist</h2>");
-  }
-
-  if (!user) {
+  } else if (!user) {
     res
       .status(403)
       .send("<h2>Users must be logged into update their urls.</h2>");
-  }
-
-  if (!urlBelongsToUser(urlList, id)) {
+  } else if (!urlBelongsToUser(urlList, id)) {
     res
       .status(403)
       .send("<h2>You do not have permission to update this url.</h2>");
-  }
-
-  const longURL = req.body.longURL;
-  if (!longURL) {
+  } else if (!longURL) {
     res.redirect(`/urls/${id}`);
   } else {
     urlDatabase[id].longURL = longURL;
@@ -184,22 +147,18 @@ app.post("/urls/:id/delete", (req, res) => {
 
   if (!existingURL) {
     res.send("<h2>This short URL does not exist</h2>");
-  }
-
-  if (!user) {
+  } else if (!user) {
     res
       .status(403)
       .send("<h2>Users must be logged into delete their urls.</h2>");
-  }
-
-  if (!urlBelongsToUser(urlList, id)) {
+  } else if (!urlBelongsToUser(urlList, id)) {
     res
       .status(403)
       .send("<h2>You do not have permission to delete this url.</h2>");
+  } else {
+    delete urlDatabase[id];
+    res.redirect("/urls");
   }
-
-  delete urlDatabase[id];
-  res.redirect("/urls");
 });
 
 //Handling registration
@@ -218,24 +177,22 @@ app.post("/register", (req, res) => {
   const user_id = generateRandomString();
   const { email, password } = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
+  const foundUser = getUserByEmail(email, users);
 
   if (!email || !password) {
     res.status(400).send("Invalid username or password");
-  }
-
-  const foundUser = getUserByEmail(email, users);
-  if (foundUser) {
+  } else if (foundUser) {
     res.status(400).send("A user with that email already exists");
+  } else {
+    //Updating the user database with the new user
+    users[user_id] = {
+      id: user_id,
+      email,
+      hashedPassword,
+    };
+    req.session.user_id = user_id;
+    res.redirect("/urls");
   }
-
-  //Updating the user database with the new user
-  users[user_id] = {
-    id: user_id,
-    email,
-    hashedPassword,
-  };
-  req.session.user_id = user_id;
-  res.redirect("/urls");
 });
 
 //Handling Login and Logout
@@ -253,25 +210,21 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
+  const foundUser = getUserByEmail(email, users);
   if (!email || !password) {
     res.status(403).send("Username or password cannot be blank");
-  }
-
-  const foundUser = getUserByEmail(email, users);
-  if (!foundUser) {
+  } else if (!foundUser) {
     res.status(403).send("No user with that email exists");
-  }
-
-  if (!bcrypt.compareSync(password, foundUser.hashedPassword)) {
+  } else if (!bcrypt.compareSync(password, foundUser.hashedPassword)) {
     res.status(403).send("Invalid password");
+  } else {
+    req.session.user_id = foundUser.id;
+    res.redirect("/urls");
   }
-
-  req.session.user_id = foundUser.id;
-  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  req.session.user_id = null;
+  req.session = null;
   res.redirect("/urls");
 });
 
